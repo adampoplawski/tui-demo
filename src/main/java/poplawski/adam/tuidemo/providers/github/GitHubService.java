@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import poplawski.adam.tuidemo.models.Account;
 import poplawski.adam.tuidemo.providers.github.mappers.GitHubMapper;
-import poplawski.adam.tuidemo.providers.github.models.GitHubBranch;
 import poplawski.adam.tuidemo.providers.github.models.GitHubRepository;
 import poplawski.adam.tuidemo.services.GitService;
 
@@ -21,15 +20,22 @@ public class GitHubService implements GitService {
     public Account getNotForkRepositories(String username) {
         List<GitHubRepository> repositories = gitHubClient.getRepositories(username);
         repositories = filterForks(repositories);
-        return GitHubMapper.toAccount(getBranches(username, repositories));
+        return GitHubMapper.toAccount(fetchBranches(username, repositories));
     }
 
-    private List<GitHubRepository> getBranches(String username, List<GitHubRepository> repositories) {
-        repositories.forEach(repository -> {
-            List<GitHubBranch> repositoriesBranches = gitHubClient.getRepositoriesBranches(username, repository.getName());
-            repository.setBranches(repositoriesBranches);
-        });
-        return repositories;
+    private List<GitHubRepository> fetchBranches(String username, List<GitHubRepository> repositories) {
+        return repositories.parallelStream()
+                .map(repository -> mapRepository(username, repository))
+                .collect(Collectors.toList());
+    }
+
+    private GitHubRepository mapRepository(String username, GitHubRepository repository) {
+        return GitHubRepository.builder()
+                .name(repository.getName())
+                .owner(repository.getOwner())
+                .fork(repository.isFork())
+                .branches(gitHubClient.getRepositoriesBranches(username, repository.getName()))
+                .build();
     }
 
     private List<GitHubRepository> filterForks(List<GitHubRepository> repositories) {
