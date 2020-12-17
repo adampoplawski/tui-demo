@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 731576701570.dkr.ecr.us-east-1.amazonaws.com
+  build:
+    commands:
+      - docker build -t tui-demo:latest .
+      - docker tag tui-demo:latest 731576701570.dkr.ecr.us-east-1.amazonaws.com/tui-demo:latest
+  post_build:
+    commands:
+      - docker push 731576701570.dkr.ecr.us-east-1.amazonaws.com/tui-demo:latest
+      - printf '[{"name":"test-container","imageUri":"%s"}]' 731576701570.dkr.ecr.us-east-1.amazonaws.com/tui-demo:latest > imagedefinitions.json
+artifacts:
+  files: imagedefinitions.json

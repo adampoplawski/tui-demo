@@ -1,0 +1,4 @@
+git-hub-api:
+  url: https://api.github.com
+  url-repos: /users/{username}/repos
+  url-branches: /repos/{username}/{repoName}/branches
